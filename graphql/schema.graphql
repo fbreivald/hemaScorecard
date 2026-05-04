@@ -1,0 +1,230 @@
+scalar Date
+
+type Mutation {
+  createPerson(input: CreatePersonInput!): Person!
+  updatePerson(personID: ID!, input: UpdatePersonInput!): Person!
+}
+
+input CreatePersonInput {
+  firstName: String!
+  lastName:  String!
+  schoolID:  ID!
+  nickname:       String
+  gender:         String
+  birthdate:      Date
+  country:        String
+  province:       String
+  city:           String
+  email:          String
+  hemaRatingsID:  Int
+  school:         School
+}
+
+input UpdatePersonInput {
+  firstName:     String
+  lastName:      String
+  schoolID:      ID
+  hemaRatingsID: Int
+}
+
+type Query {
+  # People / Roster
+  person(personID: ID!): Person
+  people(schoolID: ID, lastName: String, firstName: String): [Person!]!
+
+  # Events
+  event(eventID: ID!): Event
+  events(open: Boolean): [Event!]!
+
+  # Tournaments
+  tournament(tournamentID: ID!): Tournament
+  tournaments(eventID: ID!): [Tournament!]!
+
+  # Schools
+  school(schoolID: ID!): School
+  schools(country: String): [School!]!
+
+  # Matches
+  match(matchID: ID!): Match
+  matches(tournamentID: ID, groupID: ID): [Match!]!
+}
+
+# ─── Person ──────────────────────────────────────────────────────────────────
+
+type Person {
+  personID: ID!
+  firstName:      String!
+  middleName:     String
+  lastName:       String!
+  nickname:       String
+  gender:         String
+  birthdate:      Date
+  country:        String
+  province:       String
+  city:           String
+  email:          String
+  hemaRatingsID:  Int
+  school:         School
+  # Event-scoped entry; null when queried outside an event context
+  eventEntry(eventID: ID!): EventRosterEntry
+}
+
+# Person as entered in a specific event
+type EventRosterEntry {
+  rosterID:        ID!
+  personID:        ID!
+  eventID:         ID!
+  person:          Person!
+  school:          School
+  isTeam:          Boolean!
+  checkedIn:       Boolean!
+  waiverSigned:    Boolean!
+  publicNotes:     String
+  # Tournaments this person is entered in within the event
+  tournamentEntries: [TournamentRosterEntry!]!
+}
+
+# Person as entered in a specific tournament
+type TournamentRosterEntry {
+  tournamentRosterID: ID!
+  rosterID:           ID!
+  tournamentID:       ID!
+  rating:             Float
+  checkedIn:          Boolean!
+  gearChecked:        Boolean!
+  person:             Person!
+  school:             School
+}
+
+# ─── School ───────────────────────────────────────────────────────────────────
+
+type School {
+  schoolID:      ID!
+  fullName:      String!
+  shortName:     String
+  abbreviation:  String
+  branch:        String
+  city:          String
+  province:      String
+  country:       String
+  members:       [Person!]!
+}
+
+# ─── Event ────────────────────────────────────────────────────────────────────
+
+type Event {
+  eventID:     ID!
+  eventName:   String!
+  isMetaEvent: Boolean!
+  tournaments: [Tournament!]!
+  roster:      [EventRosterEntry!]!
+  startDate:   Date
+  endDate:     Date
+}
+
+# ─── Tournament ───────────────────────────────────────────────────────────────
+
+type Tournament {
+  tournamentID:      ID!
+  eventID:           ID!
+  name:              String!
+  weapon:            String
+  prefix:            String
+  gender:            String
+  material:          String
+  suffix:            String
+  # Scoring rules
+  maximumPoints:     Int
+  maximumExchanges:  Int
+  maxPointSpread:    Int
+  maxDoubleHits:     Int
+  timeLimit:         Int
+  allowTies:         Boolean!
+  isFinalized:       Boolean!
+  isPrivate:         Boolean!
+  isTeams:           Boolean!
+  # Participants
+  numParticipants:   Int!
+  roster:            [TournamentRosterEntry!]!
+  # Groups (pools and rounds)
+  groups:            [Group!]!
+  pools(groupSet: Int): [Pool!]!
+  matches:           [Match!]!
+}
+
+# ─── Group (pool or round) ────────────────────────────────────────────────────
+
+type Group {
+  groupID:      ID!
+  tournamentID: ID!
+  groupName:    String!
+  groupNumber:  Int!
+  groupSet:     Int
+  isPool:       Boolean!
+  matches:      [Match!]!
+  roster:       [TournamentRosterEntry!]!
+}
+
+# ─── Pool ─────────────────────────────────────────────────────────────────────
+
+type Pool {
+  groupID:      ID!
+  tournamentID: ID!
+  groupName:    String!
+  groupNumber:  Int!
+  groupSet:     Int!
+  isComplete:   Boolean!
+  numFighters:  Int
+  locationID:   Int
+  matches:      [Match!]!
+  roster:       [TournamentRosterEntry!]!
+  standings:    [PoolStanding!]!
+}
+
+type PoolStanding {
+  standingID:    ID!
+  rank:          Int
+  person:        Person
+  wins:          Float!
+  losses:        Float!
+  ties:          Float!
+  matches:       Float!
+  score:         Float!
+  pointsFor:     Float!
+  pointsAgainst: Float!
+  doubles:       Float!
+}
+
+# ─── Match ────────────────────────────────────────────────────────────────────
+
+type Match {
+  matchID:        ID!
+  groupID:        ID!
+  tournamentID:   ID!
+  matchNumber:    Int!
+  fighter1:       TournamentRosterEntry
+  fighter2:       TournamentRosterEntry
+  winner:         TournamentRosterEntry
+  fighter1Score:  Float
+  fighter2Score:  Float
+  matchTime:      Int
+  isComplete:     Boolean!
+  isIgnored:      Boolean!
+  bracketPosition: Int
+  bracketLevel:   Int
+  exchanges:      [Exchange!]!
+}
+
+# Individual scored exchange within a match
+type Exchange {
+  exchangeID:   ID!
+  matchID:      ID!
+  exchangeNumber:  Int!
+  scorer:       TournamentRosterEntry
+  receiver:     TournamentRosterEntry
+  isDouble:     Boolean!
+  exchangeType: String
+  prefix:       String
+  target:       String
+  type:         String
+}

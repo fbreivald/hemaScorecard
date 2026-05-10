@@ -1,6 +1,6 @@
 <?php
 namespace HemaScorecard\GraphQL\Resolvers;
 
-class ExchangeResolver {
+class NoExchangeResolver {
     use ExchangeCommonFields;
 }

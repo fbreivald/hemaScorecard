@@ -29,4 +29,10 @@ class EventRosterEntryResolver {
         $sql      = "SELECT * FROM eventTournamentRoster WHERE rosterID = {$rosterID}";
         return (array) mysqlQuery($sql, ASSOC);
     }
+
+    public static function person(array $entry, array $args, array $context): array {
+        $personID = (int)$entry['systemRosterID'];
+        $sql      = "SELECT * FROM systemRoster WHERE systemRosterID = {$personID}";
+        return (array) mysqlQuery($sql, SINGLE);
+    }
 }

@@ -32,13 +32,32 @@ class TournamentResolver {
     }
 
     public static function roster(array $tournament, array $args, array $context): array {
-        $data = getTournamentRoster((int)$tournament['tournamentID']);
-        return array_values((array) $data);
+        $tID = (int)$tournament['tournamentID'];
+        $sql = "SELECT eventTournamentRoster.*, eventRoster.systemRosterID
+                FROM eventTournamentRoster
+                INNER JOIN eventRoster USING(rosterID)
+                WHERE eventTournamentRoster.tournamentID = {$tID}";
+        return (array) mysqlQuery($sql, ASSOC);
     }
 
     public static function groups(array $tournament, array $args, array $context): array {
         $tID = (int)$tournament['tournamentID'];
         $sql = "SELECT * FROM eventGroups WHERE tournamentID = {$tID} ORDER BY groupSet, groupNumber";
+        return (array) mysqlQuery($sql, ASSOC);
+    }
+
+    public static function elims(array $tournament, array $args, array $context): array {
+        $tID       = (int)$tournament['tournamentID'];
+        $setClause = isset($args['groupSet'])
+            ? "AND groupSet = " . (int)$args['groupSet']
+            : '';
+        $sql = "SELECT groupID, tournamentID, groupName, groupNumber, groupSet,
+                       groupComplete, numFighters, locationID
+                FROM eventGroups
+                WHERE tournamentID = {$tID}
+                AND groupType = 'elim'
+                {$setClause}
+                ORDER BY groupSet, groupNumber";
         return (array) mysqlQuery($sql, ASSOC);
     }
 

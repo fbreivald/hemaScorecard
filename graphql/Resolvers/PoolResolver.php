@@ -17,11 +17,10 @@ class PoolResolver {
 
     public static function roster(array $pool, array $args, array $context): array {
         $groupID = (int)$pool['groupID'];
-        $sql     = "SELECT eventTournamentRoster.*, eventRoster.systemRosterID
-                    FROM eventTournamentRoster
+        $sql     = "SELECT eventGroupRoster.*, eventRoster.systemRosterID
+                    FROM eventGroupRoster
                     INNER JOIN eventRoster USING(rosterID)
-                    INNER JOIN eventGroupRosters USING(tournamentRosterID)
-                    WHERE eventGroupRosters.groupID = {$groupID}";
+                    WHERE eventGroupRoster.groupID = {$groupID}";
         return (array) mysqlQuery($sql, ASSOC);
     }
 

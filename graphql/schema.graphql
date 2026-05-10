@@ -3,28 +3,104 @@ scalar Date
 type Mutation {
   createPerson(input: CreatePersonInput!): Person!
   updatePerson(personID: ID!, input: UpdatePersonInput!): Person!
+  createSchool(input: CreateSchoolInput!): School!
+  updateSchool(schoolID: ID!, input: UpdateSchoolInput!): School!
+  # Generic exchange (low-level)
+  createExchange(input: CreateExchangeInput!): Exchange!
+  updateExchange(exchangeID: ID!, input: UpdateExchangeInput!): Exchange!
+  deleteExchange(exchangeID: ID!): Boolean!
+  # Type-specific exchange mutations
+  createClean(matchID: ID!, scorerID: ID, receiverID: ID, attack: AttackInput, score: Float, exchangeTime: Int): Clean!
+  createAfterBlow(matchID: ID!, scorerID: ID, receiverID: ID, attack: AttackInput, score: Float, exchangeTime: Int): Afterblow!
+  createDouble(matchID: ID!, attack: AttackInput, exchangeTime: Int): Double!
+  createDoubleOut(matchID: ID!, attack: AttackInput, exchangeTime: Int): DoubleOut!
+  createWin(matchID: ID!, winnerID: ID!, exchangeTime: Int): Win!
+  createTie(matchID: ID!, exchangeTime: Int): Tie!
+  createNoExchange(matchID: ID!, exchangeTime: Int): NoExchange!
+  createNoQuality(matchID: ID!, recipientID: ID, exchangeTime: Int): NoQuality!
+  createPenalty(matchID: ID!, recipientID: ID!, illegalAction: IllegalAction!, card: Card!, score: Float, exchangeTime: Int): Penalty!
+  createSwitchFighter(matchID: ID!, incomingID: ID!, outgoingID: ID!, exchangeTime: Int): SwitchFighter!
 }
 
 input CreatePersonInput {
-  firstName: String!
-  lastName:  String!
-  schoolID:  ID!
-  nickname:       String
-  gender:         String
-  birthdate:      Date
-  country:        String
-  province:       String
-  city:           String
-  email:          String
-  hemaRatingsID:  Int
-  school:         School
+  firstName:    String!
+  lastName:     String!
+  middleName:   String
+  nickname:     String
+  gender:       String
+  birthdate:    Date
+  country:      String
+  province:     String
+  city:         String
+  email:        String
+  schoolID:     ID
+  hemaRatingsID: Int
 }
 
 input UpdatePersonInput {
-  firstName:     String
-  lastName:      String
-  schoolID:      ID
+  firstName:    String
+  lastName:     String
+  middleName:   String
+  nickname:     String
+  gender:       String
+  birthdate:    Date
+  country:      String
+  province:     String
+  city:         String
+  email:        String
+  schoolID:     ID
   hemaRatingsID: Int
+}
+
+input CreateSchoolInput {
+  fullName:     String!
+  shortName:    String
+  abbreviation: String
+  branch:       String
+  city:         String
+  province:     String
+  countryIso2:  String
+}
+
+input UpdateSchoolInput {
+  fullName:     String
+  shortName:    String
+  abbreviation: String
+  branch:       String
+  city:         String
+  province:     String
+  countryIso2:  String
+}
+
+input AttackInput {
+  prefix: ID
+  target: ID
+  type:   ID
+}
+
+input CreateExchangeInput {
+  matchID:       ID!
+  exchangeType:  ExchangeType!
+  scoringID:     ID
+  receivingID:   ID
+  scoreValue:    Float
+  scoreDeduction: Float
+  exchangeTime:  Int
+  refPrefix:     ID
+  refTarget:     ID
+  refType:       ID
+}
+
+input UpdateExchangeInput {
+  exchangeType:  ExchangeType
+  scoringID:     ID
+  receivingID:   ID
+  scoreValue:    Float
+  scoreDeduction: Float
+  exchangeTime:  Int
+  refPrefix:     ID
+  refTarget:     ID
+  refType:       ID
 }
 
 type Query {
@@ -93,7 +169,7 @@ type TournamentRosterEntry {
   checkedIn:          Boolean!
   gearChecked:        Boolean!
   person:             Person!
-  school:             School
+  tournament:         Tournament
 }
 
 # ─── School ───────────────────────────────────────────────────────────────────
@@ -149,18 +225,26 @@ type Tournament {
   # Groups (pools and rounds)
   groups:            [Group!]!
   pools(groupSet: Int): [Pool!]!
+  elims(groupSet: Int): [Elim!]!
   matches:           [Match!]!
 }
 
 # ─── Group (pool or round) ────────────────────────────────────────────────────
 
+enum GroupType {
+  pool
+  round
+  elim
+  final
+}
+
 type Group {
   groupID:      ID!
   tournamentID: ID!
+  groupType:    GroupType!
   groupName:    String!
   groupNumber:  Int!
   groupSet:     Int
-  isPool:       Boolean!
   matches:      [Match!]!
   roster:       [TournamentRosterEntry!]!
 }
@@ -195,6 +279,21 @@ type PoolStanding {
   doubles:       Float!
 }
 
+# ─── Elim ─────────────────────────────────────────────────────────────────────
+
+type Elim {
+  groupID:      ID!
+  tournamentID: ID!
+  groupName:    String!
+  groupNumber:  Int!
+  groupSet:     Int!
+  isComplete:   Boolean!
+  numFighters:  Int
+  locationID:   Int
+  matches:      [Match!]!
+  roster:       [TournamentRosterEntry!]!
+}
+
 # ─── Match ────────────────────────────────────────────────────────────────────
 
 type Match {
@@ -207,24 +306,179 @@ type Match {
   winner:         TournamentRosterEntry
   fighter1Score:  Float
   fighter2Score:  Float
-  matchTime:      Int
+  matchTimeSeconds: Int
   isComplete:     Boolean!
   isIgnored:      Boolean!
   bracketPosition: Int
   bracketLevel:   Int
   exchanges:      [Exchange!]!
+  result:         MatchResult
+}
+
+enum MatchResult {
+  win
+  tie
+}
+
+type Attack {
+  prefix: String
+  target: String
+  type: String
+}
+
+enum IllegalAction {
+  backOfHead
+  excessiveForce
+  offTarget
+  unsportsmanlike 
+  noHold
+  weaponDisparity
+  ringOut
+  floor
+  exposeBack
+  unspecified
+  score
+  slow
+  behavior_misc
+  score_doubles
+  target_foot
+  control_misc
+  target_action
+  behavior_equip
+  score_match_doubles
+  behavior_contact
+}
+
+enum Card {
+  yellow
+  red
+  black
+}
+
+enum ExchangeType {
+  clean
+  afterblow
+  double
+  doubleOut
+  scored
+  noExchange
+  noQuality
+  penalty
+  tie
+  winner
+  switchFighter
 }
 
 # Individual scored exchange within a match
-type Exchange {
-  exchangeID:   ID!
-  matchID:      ID!
-  exchangeNumber:  Int!
-  scorer:       TournamentRosterEntry
-  receiver:     TournamentRosterEntry
-  isDouble:     Boolean!
-  exchangeType: String
-  prefix:       String
-  target:       String
-  type:         String
+interface Exchange {
+  exchangeID:     ID!
+  match:          Match!
+  exchangeNumber: Int!
+  exchangeTime:   Int!
+  score:          Int!
+}
+
+type Win implements Exchange {
+  exchangeID:     ID!
+  match:          Match!
+  exchangeNumber: Int!
+  exchangeTime:   Int!  
+  score:          Int!
+  winner:         TournamentRosterEntry!
+}
+
+type Tie implements Exchange {
+  exchangeID:     ID!
+  match:          Match!
+  exchangeNumber: Int!
+  exchangeTime:   Int!
+  score:          Int!
+}
+
+type NoExchange implements Exchange {
+  exchangeID:     ID!
+  match:          Match!
+  exchangeNumber: Int!
+  exchangeTime:   Int!
+  score:          Int!
+}
+
+type Clean implements Exchange {
+  exchangeID:     ID!
+  match:          Match!
+  exchangeNumber: Int!
+  exchangeTime:   Int!
+  score:          Int!
+  scorer:         TournamentRosterEntry
+  receiver:       TournamentRosterEntry
+  attack:         Attack
+}
+
+type Afterblow implements Exchange {
+  exchangeID:     ID!
+  match:          Match!
+  exchangeNumber: Int!
+  exchangeTime:   Int!
+  score:          Int!
+  scorer:         TournamentRosterEntry
+  receiver:       TournamentRosterEntry
+  attack:         Attack
+}
+
+type Double implements Exchange {
+  exchangeID:     ID!
+  match:          Match!
+  exchangeNumber: Int!
+  exchangeTime:   Int!
+  score:          Int!
+  fighter1Attack: Attack
+  fighter2Attack: Attack
+}
+
+type DoubleOut implements Exchange {
+  exchangeID:     ID!
+  match:          Match!
+  exchangeNumber: Int!
+  exchangeTime:   Int!
+  score:          Int!
+  fighter1Attack: Attack
+  fighter2Attack: Attack
+}
+
+# What is a "scored" exchange?
+type Scored implements Exchange {
+  exchangeID:     ID!
+  match:          Match!
+  exchangeNumber: Int!
+  exchangeTime:   Int!
+  score:          Int!
+}
+
+type NoQuality implements Exchange {
+  exchangeID:     ID!
+  match:          Match!
+  exchangeNumber: Int!
+  exchangeTime:   Int!  
+  score:          Int!
+}
+
+type Penalty implements Exchange {
+  exchangeID:     ID!
+  match:          Match!
+  exchangeNumber: Int!
+  exchangeTime:   Int!
+  recipient:      TournamentRosterEntry!
+  score:          Int!
+  illegalAction:  IllegalAction!
+  card:           Card!
+}
+
+type SwitchFighter implements Exchange {
+  exchangeID:     ID!
+  match:          Match!
+  exchangeNumber: Int!
+  exchangeTime:   Int!
+  score:          Int!
+  incoming:       TournamentRosterEntry!
+  outgoing:       TournamentRosterEntry!
 }

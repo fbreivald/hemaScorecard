@@ -12,16 +12,28 @@ class TournamentRosterEntryResolver {
     }
 
     public static function person(array $entry, array $args, array $context): ?array {
-        $systemRosterID = (int)($entry['systemRosterID'] ?? 0);
-        if (!$systemRosterID) {
+        $tournamentRosterID = (int)($entry['tournamentRosterID'] ?? 0);
+        if (!$tournamentRosterID) {
             return null;
         }
-        $sql = "SELECT * FROM systemRoster WHERE systemRosterID = {$systemRosterID}";
+        $sql = "SELECT systemRoster.* 
+                FROM eventTournamentRoster
+                INNER JOIN systemRoster ON systemRoster.systemRosterID = eventTournamentRoster.rosterID
+                WHERE tournamentRosterID = {$tournamentRosterID}";
         return mysqlQuery($sql, SINGLE) ?: null;
     }
 
     public static function school(array $entry, array $args, array $context): ?array {
         $schoolID = $entry['schoolID'] ?? null;
         return $schoolID ? getSchoolInfo((int)$schoolID) ?: null : null;
+    }
+
+    public static function tournament(array $entry, array $args, array $context): ?array {
+        $tournamentID = (int)($entry['tournamentID'] ?? 0);
+        if (!$tournamentID) {
+            return null;
+        }
+        $sql = "SELECT * FROM eventTournaments WHERE tournamentID = {$tournamentID}";
+        return mysqlQuery($sql, SINGLE) ?: null;
     }
 }

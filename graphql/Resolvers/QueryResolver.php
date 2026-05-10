@@ -80,7 +80,11 @@ class QueryResolver {
 
     public static function tournaments($root, array $args, array $context): array {
         $data = getTournamentsFull((int)$args['eventID']);
-        return array_values((array) $data);
+        $rows = [];
+        foreach ((array) $data as $id => $row) {
+            $rows[] = ['tournamentID' => $id] + (array) $row;
+        }
+        return $rows;
     }
 
     // ── Matches ───────────────────────────────────────────────────────────────
